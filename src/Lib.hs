@@ -10,25 +10,26 @@
 module Lib where
 
 import Text.PrettyPrint.HughesPJ
-import Test.SmallCheck
-import Test.SmallCheck.Series
+import Series
 import GHC.Generics
 import Data.Time.Clock
-import Control.Monad ( forM, forM_ )
+import Control.Monad ( forM, forM_, guard, replicateM )
+import Data.List ( transpose, intersperse )
 import Data.Char (toLower)
+
 
 -- I'm pretty sure this could be generified, TH-ified etc.
 -- (Excuse the longwinded code, I did not have time to write short one)
 
-data Op = Sep | Cat | Fsep | Fcat
+data Op = Hcat | Hsep | Vcat | Sep | Cat | Fsep | Fcat
   deriving (Eq, Ord, Show, Generic)
 
 instance Pr Op where pr = text . map toLower . show
 
 fun :: Op -> ([Doc] -> Doc)
-fun op = case op of Sep -> sep ; Cat -> cat ; Fsep -> fsep ; Fcat -> fcat
+fun op = case op of Hcat -> hcat ; Hsep -> hsep ; Vcat -> vcat ; Sep -> sep ; Cat -> cat ; Fsep -> fsep ; Fcat -> fcat
 
-instance Monad m => Serial m Op
+instance Serial Op
 
 data Term = Leaf
        | Branch Op [Term]
@@ -48,13 +49,13 @@ instance Pr Term where
 
 instance Show Term where show = render . pr
 
-instance Monad m => Serial m Term
+instance Serial Term
 
 data Context = Hole
        | CBranch Op [Term] Context [Term]
   deriving (Eq, Ord, Generic)
 
-instance Monad m => Serial m Context
+instance Serial Context
 
 instance Pr Context where
   pr c = case c of
@@ -77,12 +78,11 @@ time_whnf x = do
   end <- x `seq` getCurrentTime
   return $ diffUTCTime end start
 
--- | first argument: max. number of iterations of this context
-check_context :: Int -> Context -> Term -> IO [ NominalDiffTime ]
+-- | first argument: number of iterations of this context
+check_context :: Int -> Context -> Term -> IO NominalDiffTime
 check_context n ctx b = do
-  let ds = iterate (apply ctx) b
-  forM (take n ds) $ \ d -> do
-    time_whnf ( length $ render $ eval d )
+  let d = iterate (apply ctx) b !! n
+  time_whnf ( length $ render $ eval d )
 
 data Case = Case { c :: Context, b :: Term, n :: Int, t :: NominalDiffTime }
 
@@ -93,14 +93,15 @@ instance Pr Case where
 
 instance Show Case where show = render . pr
 
--- | first argument: size of these contexts, second: max. iterations for each,
+-- | first argument: no. of contexts to generate,
+-- second: max. iterations for each,
 -- returns worst offender (with max total sum)
 check_contexts :: Int -> Int -> IO Case
-check_contexts d n = do
+check_contexts gen it = do
   let go c [] = return c
       go c (ctx : ctxs) = do
-        out <- check_context n ctx Leaf
-        let c' = Case ctx Leaf n $ sum out
+        out <- check_context it ctx Leaf
+        let c' = Case ctx Leaf it out
         if (t c' > t c) then do print c'; go c' ctxs else go c ctxs
-  go (Case Hole Leaf 0 0) $ list d series
+  go (Case Hole Leaf 0 0) $ take gen $ contents series
 
