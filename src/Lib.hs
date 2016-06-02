@@ -82,7 +82,14 @@ time_whnf x = do
 check_context :: Int -> Context -> Term -> IO NominalDiffTime
 check_context n ctx b = do
   let d = iterate (apply ctx) b !! n
-  time_whnf ( length $ render $ eval d )
+  time_whnf ( norender
+              -- length $ render
+              $ eval d )
+
+-- | just count how many textdetails were emitted
+norender :: Doc -> Int
+norender = fullRender PageMode 100 1.5 ( \ _ c -> succ c ) 0 
+
 
 data Case = Case { c :: Context, b :: Term, n :: Int, t :: NominalDiffTime }
 
