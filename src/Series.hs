@@ -12,6 +12,8 @@ module Series where
 import Data.Monoid
 import GHC.Generics
 
+import Control.Applicative
+
 -- | this is an infinite list of lists.
 -- each individual lists is finite, and may even be empty.
 newtype Series a = Series [[a]]
