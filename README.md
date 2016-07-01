@@ -11,6 +11,7 @@ Results:
 * It seems it's not getting worse that that. I enumerated small contexts and found none that shows drastically different behaviour.
 * For these tests, it does not matter that we render to plain `Strings` which has inefficient `(++)`. 
   I used a [different render function](https://github.com/jwaldmann/pretty-test/blob/master/src/Lib.hs#L90) that just computes a number: results are quite exactly the same.
+* There's something wrong in `wl-pprint` (including `-text`, `-extras`), see https://github.com/ekmett/wl-pprint-extras/issues/16
 
 Conclusion:
 
