@@ -9,7 +9,14 @@
 
 module Lib where
 
-import Text.PrettyPrint.HughesPJ
+-- for outputs of our program:
+import Text.PrettyPrint.HughesPJ 
+
+-- for measuring their performance:
+import qualified Text.PrettyPrint.HughesPJ as TPH 
+import qualified Text.PrettyPrint.Leijen as TPL
+import qualified Text.PrettyPrint.Free as TPF
+
 import Series
 import GHC.Generics
 import Data.Time.Clock
@@ -17,6 +24,7 @@ import Control.Monad ( forM, forM_, guard, replicateM )
 import Data.List ( transpose, intersperse )
 import Data.Char (toLower)
 
+import Data.Proxy
 
 -- I'm pretty sure this could be generified, TH-ified etc.
 -- (Excuse the longwinded code, I did not have time to write short one)
@@ -26,19 +34,39 @@ data Op = Hcat | Hsep | Vcat | Sep | Cat | Fsep | Fcat
 
 instance Pr Op where pr = text . map toLower . show
 
-fun :: Op -> ([Doc] -> Doc)
-fun op = case op of Hcat -> hcat ; Hsep -> hsep ; Vcat -> vcat ; Sep -> sep ; Cat -> cat ; Fsep -> fsep ; Fcat -> fcat
-
 instance Serial Op
 
 data Term = Leaf
        | Branch Op [Term]
   deriving (Eq, Ord, Generic)
 
-eval :: Term -> Doc
-eval t = case t of
-  Leaf -> text "l"
-  Branch op ts -> fun op $ map eval ts
+class Eval d where
+  eval :: Term -> d
+  size :: d -> Int
+
+instance Eval TPH.Doc where
+  size = length . render
+  eval t = case t of
+    Leaf -> TPH.text "l"
+    Branch op ts ->
+      let fun = case op of Hcat -> TPH.hcat ; Hsep -> TPH.hsep ; Vcat -> TPH.vcat ; Sep -> TPH.sep ; Cat -> TPH.cat ; Fsep -> TPH.fsep ; Fcat -> TPH.fcat
+      in  fun $ map eval ts
+
+instance Eval TPL.Doc where
+  size d = length $ TPL.displayS ( TPL.renderPretty 0.4 80 d ) ""
+  eval t = case t of
+    Leaf -> TPL.text "l"
+    Branch op ts ->
+      let fun = case op of Hcat -> TPL.hcat ; Hsep -> TPL.hsep ; Vcat -> TPL.vcat ; Sep -> TPL.sep ; Cat -> TPL.cat ; Fsep -> TPL.fillSep ; Fcat -> TPL.fillCat
+      in  TPL.align $ fun $ map eval ts
+
+instance Eval (TPF.Doc ()) where
+  size d = length $ TPF.displayS ( TPF.renderPretty 0.4 80 d ) ""
+  eval t = case t of
+    Leaf -> TPF.text "l"
+    Branch op ts ->
+      let fun = case op of Hcat -> TPF.hcat ; Hsep -> TPF.hsep ; Vcat -> TPF.vcat ; Sep -> TPF.sep ; Cat -> TPF.cat ; Fsep -> TPF.fillSep ; Fcat -> TPF.fillCat
+      in  TPF.align $ fun $ map eval ts
 
 class Pr a where pr :: a -> Doc
 
@@ -79,12 +107,10 @@ time_whnf x = do
   return $ diffUTCTime end start
 
 -- | first argument: number of iterations of this context
-check_context :: Int -> Context -> Term -> IO NominalDiffTime
-check_context n ctx b = do
+check_context :: Eval d => Proxy d -> Int -> Context -> Term -> IO NominalDiffTime
+check_context p n ctx b = do
   let d = iterate (apply ctx) b !! n
-  time_whnf ( norender
-              -- length $ render
-              $ eval d )
+  time_whnf ( size ( asProxyTypeOf (eval d) p ) )
 
 -- | just count how many textdetails were emitted
 norender :: Doc -> Int
@@ -103,12 +129,12 @@ instance Show Case where show = render . pr
 -- | first argument: no. of contexts to generate,
 -- second: max. iterations for each,
 -- returns worst offender (with max total sum)
-check_contexts :: Int -> Int -> IO Case
-check_contexts gen it = do
+check_contexts :: Eval d => Proxy d -> Int -> IO Case
+check_contexts p it = do
   let go c [] = return c
       go c (ctx : ctxs) = do
-        out <- check_context it ctx Leaf
+        out <- check_context p it ctx Leaf
         let c' = Case ctx Leaf it out
         if (t c' > t c) then do print c'; go c' ctxs else go c ctxs
-  go (Case Hole Leaf 0 0) $ take gen $ contents series
+  go (Case Hole Leaf 0 0) $ contents series
 
