@@ -1,0 +1,30 @@
+\begin{frame}[fragile]
+\frametitle{Rewriting and Derivational Complexity}
+
+  \begin{itemize}[<+->]
+  \item
+    \emph{derivation height} of $t\in \Term(\Sigma)$, w.r.t. $R$
+
+    length of a longest derivation (computation) starting in $t$
+
+    $\deha_R(t)=\sup\{ k\mid \exists t': t\to_R^k t' \}$
+  \item 
+    \emph{derivational complexity} of $R$:
+
+    derivation height as function of input size
+
+    $\dece_R= s \mapsto \sup \{\deha_R(t) \mid |t|\le s \}$.
+  \item in general:
+    
+    complexity of a program $=$ (input size $\mapsto$ resource usage)
+
+  \item we want statements like ``the complexity of that algorithm
+    is linear'', \dots
+
+  \item     (complexity of a problem:  
+
+    best complexity of a program that solves the problem)
+
+  \end{itemize}
+
+\end{frame}

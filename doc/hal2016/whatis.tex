@@ -1,0 +1,42 @@
+
+\begin{frame}[fragile]
+\frametitle{Text Formatting (Pretty Printing)}
+
+\begin{itemize}%[<+->]
+\item 
+abstract data type $D$ (Document)
+
+$D$ represents set of 2-dimensional layouts
+\item
+construction from
+  \begin{itemize}[]
+  \item individual letters (or short strings)
+  \item composition: atop, beside, choice
+  \end{itemize}
+\begin{small}
+\begin{verbatim}
+text "A" <+> vcat [text "B", text "C"] ==>  A B
+                                              C
+\end{verbatim}
+\end{small}
+\item 
+  rendering: compute one layout that (best) matches
+  some criteria (e.g., page width)
+\item
+typical papers/implementations:
+\begin{itemize}
+\item 
+John Hughes 1995, 
+\emph{The Design of a Pretty Printing Library},
+Simon Peyton Jones 1997, \texttt{pretty}
+\item
+Derek Oppen 1980, Phil Wadler 1998,
+\emph{A Prettier Printer}, Dan Leijen, \texttt{wl-pprint},
+Edward Kmett, \texttt{wl-pprint-extras}
+\end{itemize}
+
+
+\end{itemize}
+
+
+\end{frame}

@@ -1,0 +1,21 @@
+\begin{frame}[fragile]
+\frametitle{Actual Code: Does This Look Risky?}
+\begin{small}
+(from \texttt{wl-pprint-1.2/Text/PrettyPrint/Leijen.hs})
+\begin{verbatim}
+best n k (Cons i d ds) = case d of 
+   Union x y -> nicest n k (best n k (Cons i x ds))
+                           (best n k (Cons i y ds))
+nicest n k x y  | fits width x  = x
+                | otherwise     = y
+    where width = min (w - k) (r - k + n)
+fits w x     | w < 0   = False
+fits w SEmpty          = True
+fits w (SChar c x)     = fits (w - 1) x
+fits w (SText l s x)   = fits (w - l) x
+fits w (SLine i x)     = True
+\end{verbatim}
+\end{small}
+Neil Mitchell (on similar code in \texttt{pretty}):\\
+``I'd be surprised if this was \emph{not} quadratic.''
+\end{frame}

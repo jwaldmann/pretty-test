@@ -1,0 +1,21 @@
+\begin{frame}[fragile]
+\frametitle{Rewriting}
+
+  \begin{itemize}[<+->]
+  \item signature $\Sigma$ (set of function symbols with arities)
+  \item $\Term(\Sigma,V)$ with variables, 
+    substitition $\sigma \in (V\to\Term(\Sigma,V))$,
+  \item rule $(l,r)\in\Term(\Sigma,V)^2$,
+  \item rule application 
+    $t\stackrel{p,\sigma}{\longrightarrow}_{(l,r)} t'$ 
+    where $t[p]=l\sigma, t'=t[p:=r\sigma]$.
+  \item rewrite system (\emph{program}) $R$ is set of rules
+  \item rewrite relation (\emph{computation step}) $\to_R$
+    on $\Term(\Sigma)$
+
+    $t\to_R t'$ iff $\exists \sigma,p,(l,r)\in R: 
+    t\stackrel{p\in\Pos(t),\sigma}{\longrightarrow}_{(l,r)} t'$
+  \end{itemize}
+
+\end{frame}
+

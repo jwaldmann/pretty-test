@@ -1,0 +1,75 @@
+\documentclass[final,12pt]{beamer}
+% \documentclass[final,14pt,handout]{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+
+\usepackage{pgf}
+\usepackage{tikz}
+\usetikzlibrary{arrows,automata,positioning}
+
+
+% \usepackage[ngerman]{babel}
+\usepackage{times}
+\usepackage{amssymb}
+
+\usepackage{etex}
+\reserveinserts{28}
+\input{xy}
+\xyoption{all}
+
+
+% http://tex.stackexchange.com/questions/13696/crossing-out-sentences
+% \usepackage[normalem]{ulem}
+% \usepackage{soul}
+% does not work with evince:
+% \usepackage{xcolor}
+% \usepackage{pdfcomment}
+
+\title[Automated Performance Measurements]{
+  Automated Performance Measurements \\
+  (for pretty printing libraries)
+}
+\author{Johannes Waldmann, 
+  HTWK Leipzig
+}
+\date[HAL'16]{
+  Haskell in Leipzig, 2016
+}
+
+\input{macros}
+
+\newcommand{\FF}{\mathbb{F}}
+\newcommand{\ola}[1]{\overleftarrow{#1}}
+\newcommand{\ora}[1]{\overrightarrow{#1}}
+
+\useoutertheme{infolines}
+%\useinnertheme{rectangles}
+\usecolortheme{seagull}
+\beamertemplatenavigationsymbolsempty
+
+\setbeamercovered{transparent}
+
+\begin{document}
+
+\frame{\titlepage}
+
+\newenvironment{slide}[1]%
+{\begin{frame}\frametitle{#1}}
+{\end{frame}}
+
+% \input{intro}
+
+\input{whatis}
+\input{costmodel}
+\input{rewrite}
+\input{dc}
+\input{apply}
+\input{actualcost}
+\input{implementation}
+\input{actual}
+\input{analysis}
+\input{acciquad}
+
+% \input{conclusion}
+
+\end{document}

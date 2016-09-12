@@ -1,0 +1,36 @@
+\begin{frame}[fragile]
+\frametitle{Actual Cost of Formatting}
+
+\begin{itemize}%[<+->]
+\item occasional observations (for a long time)
+
+  pretty printer appears slow, or even hangs
+\item 
+  automated benchmarking:  
+  \url{https://github.com/jwaldmann/pretty-test}
+
+  enumeration of families $t_k=C^k[t_0]$ 
+
+  suggest that cost is super-linear
+
+\item 
+\begin{small}
+\begin{verbatim}
+import Text.PrettyPrint.HughesPJ --  pretty
+length $ render 
+  $ iterate (\d -> sep [text "l",cat [d],text "l"]) 
+            (text "l") !! 400
+\end{verbatim}
+\end{small}
+\item 
+\begin{small}
+\begin{verbatim}
+import Text.PrettyPrint.Free -- wl-pprint-extras
+putDoc $ iterate (\d -> hsep [d, sep []]) 
+                 (text  "l") !! 40
+\end{verbatim}
+\end{small}
+\end{itemize}
+
+
+\end{frame}

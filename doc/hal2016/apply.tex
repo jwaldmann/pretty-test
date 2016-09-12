@@ -1,0 +1,48 @@
+\begin{frame}[fragile]
+\frametitle{How to Apply the Formal Model (1)}
+
+  \begin{itemize}[<+->]
+  \item ``input term'' $=$ nested API calls
+
+\begin{verbatim}
+data Op = Hcat | Hsep | Vcat | Sep | Cat | Fsep | Fcat
+data Term = Leaf | Branch Op [Term]
+instance Serial Op ; instance Serial Term
+
+class Eval d where  eval :: Term -> d 
+import Text.PrettyPrint.HughesPJ as TPH 
+instance Eval TPH.Doc where ...
+\end{verbatim}
+
+  \item enumerate all such terms by size,
+
+    for each, measure cost of evaluation (rendering)
+
+  \item could use \texttt{smallcheck}, 
+
+    but this enumerates by depth (not size) 
+
+    this is easy to modify
+
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{How to Apply the Formal Model (2)}
+
+  \begin{itemize}[<+->]
+  \item there are a lot of small terms,
+  \item most are not interesting (will be rendered fast)
+  \item we actually want families of terms
+    (with linear size), 
+
+    from iterating a context $t_k=C^k[t]$
+\begin{verbatim}
+data Context = Hole
+       | CBranch Op [Term] Context [Term]
+apply :: Context -> Term -> Term
+\end{verbatim}
+
+  \end{itemize}
+
+\end{frame}

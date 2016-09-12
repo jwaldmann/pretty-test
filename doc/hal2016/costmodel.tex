@@ -1,0 +1,27 @@
+\begin{frame}[fragile]
+\frametitle{Expected Cost and Cost Model}
+
+  \begin{itemize}%[<+->]
+\item
+practical consideration: 
+  \begin{itemize}
+  \item (pretty) printing must \emph{never} take noticeable time
+  \item importance: \texttt{pretty} has  387 reverse hackage dependencies (\texttt{ansi-wl-pprint}: 73)
+  \end{itemize}
+\item formal model:
+\begin{itemize}
+\item cf. Wadler Section 3, page 11:
+  ``reasonble to expect \dots time $O(s)$,
+  where $s$ is the size of the document''
+  \item ``document'' $=$ term of \emph{nested} API calls
+\item innermost derivational complexity  
+  should be linear
+\end{itemize}
+\item assumptions:
+  \begin{itemize}
+  \item string catenation in (amortized) constant time
+  \item nested indentation may produce
+    quadratic amount of whitespace --- ignore (compress)
+  \end{itemize}
+\end{itemize}
+\end{frame}
