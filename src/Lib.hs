@@ -54,7 +54,7 @@ data Op = Hcat | Hsep | Vcat | Sep | Cat | Fsep | Fcat
 instance Pr Op where pr = Doc.text . map toLower . show
 
 instance Serial Op
- where series = Series $ [Cat, Sep] : repeat []
+ where series = Series $ [Hsep, Sep] : repeat []
 
 data Term = Leaf
        | Branch Op [Term]
