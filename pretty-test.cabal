@@ -24,7 +24,7 @@ library
   exposed-modules:     Lib
   other-modules:       Series
   -- other-extensions:    
-  build-depends:       base==4.*, time, pretty, wl-pprint, wl-pprint-extras, wl-pprint-text, ansi-wl-pprint, mainland-pretty
+  build-depends:       base==4.*, time, pretty, wl-pprint, wl-pprint-extras, wl-pprint-text, text, ansi-wl-pprint, mainland-pretty
   hs-source-dirs:      src
   default-language:    Haskell2010
 

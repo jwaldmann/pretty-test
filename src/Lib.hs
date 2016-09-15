@@ -18,6 +18,7 @@ import qualified Text.PrettyPrint.HughesPJ as Doc
 -- for measuring their performance:
 import qualified Text.PrettyPrint.HughesPJ as TPH 
 import qualified Text.PrettyPrint.Leijen as TPL
+import qualified Text.PrettyPrint.Leijen.Text as TPLT
 import qualified Text.PrettyPrint.Free as TPF
 import qualified Text.PrettyPrint.ANSI.Leijen as TPAL
 import qualified Text.PrettyPrint.Mainland as TPM
@@ -25,19 +26,22 @@ import qualified Text.PrettyPrint.Mainland as TPM
 import Series
 import GHC.Generics
 import Data.Time.Clock
+import System.Timeout
 import Control.Monad ( forM, forM_, guard, replicateM )
 import Data.List ( transpose, intersperse )
 import Data.Char (toLower)
+import qualified Data.Text.Lazy as DTL
 
 data Proxy (t :: Tag) = Proxy
 
-data Tag = TPH | TPL | TPF | TPAL | TPM
+data Tag = TPH | TPL | TPLT | TPF | TPAL | TPM
   deriving (Eq, Ord, Show)
 
 class Printer ( p :: Tag ) where type Doc p
 
 instance Printer TPH where type Doc TPH = TPH.Doc
 instance Printer TPL where type Doc TPL = TPL.Doc
+instance Printer TPLT where type Doc TPLT = TPLT.Doc
 instance Printer TPF where type Doc TPF = TPF.Doc ()
 instance Printer TPAL where type Doc TPAL = TPAL.Doc
 instance Printer TPM where type Doc TPM = TPM.Doc
@@ -75,6 +79,14 @@ instance Eval TPL.Doc where
     Branch op ts ->
       let fun = case op of Hcat -> TPL.hcat ; Hsep -> TPL.hsep ; Vcat -> TPL.vcat ; Sep -> TPL.sep ; Cat -> TPL.cat ; Fsep -> TPL.fillSep ; Fcat -> TPL.fillCat
       in  TPL.align $ fun $ map eval ts
+
+instance Eval TPLT.Doc where
+  size d = fromIntegral $ DTL.length $ TPLT.displayT ( TPLT.renderPretty 0.4 80 d )
+  eval t = case t of
+    Leaf -> TPLT.text $ DTL.pack "l"
+    Branch op ts ->
+      let fun = case op of Hcat -> TPLT.hcat ; Hsep -> TPLT.hsep ; Vcat -> TPLT.vcat ; Sep -> TPLT.sep ; Cat -> TPLT.cat ; Fsep -> TPLT.fillSep ; Fcat -> TPLT.fillCat
+      in  TPLT.align $ fun $ map eval ts
 
 instance Eval (TPF.Doc ()) where
   size d = length $ TPF.displayS ( TPF.renderPretty 0.4 80 d ) ""
@@ -130,26 +142,28 @@ apply c t = case c of
   Hole -> t
   CBranch op xs c' ys -> Branch op $ xs ++ [apply c' t] ++ ys
 
-
 -- | will force argument to whnf and measure the time to do this 
-time_whnf :: a -> IO NominalDiffTime
-time_whnf x = do
+time_whnf :: Int -> a -> IO Time
+time_whnf to x = do
   start <- getCurrentTime
-  end <- x `seq` getCurrentTime
-  return $ diffUTCTime end start
+  mx <- timeout (to * 10^6) ( x `seq` return x )
+  end <- getCurrentTime
+  return $ case mx of
+      Just x -> Exactly $ diffUTCTime end start
+      Nothing -> Morethan $ diffUTCTime end start
 
 -- | first argument: number of iterations of this context
--- check_context :: Eval (Doc d) => (d :: Tag) -> Int -> Context -> Term -> IO NominalDiffTime
-check_context (_ :: Proxy d) n ctx b = do
+check_context :: Eval (Doc d) => Proxy d -> Int -> Int -> Context -> Term -> IO Time
+check_context (_ :: Proxy d) n to ctx b = do
   let d = iterate (apply ctx) b !! n
-  time_whnf ( size ( (eval d) :: Doc d  ) )
+  time_whnf to ( size ( (eval d) :: Doc d  ) )
 
 -- | just count how many textdetails were emitted
 norender :: Doc.Doc -> Int
 norender = Doc.fullRender Doc.PageMode 100 1.5 ( \ _ c -> succ c ) 0 
 
 
-data Case = Case { c :: Context, b :: Term, n :: Int, t :: NominalDiffTime }
+data Case = Case { c :: Context, b :: Term, n :: Int, t :: Time }
 
 instance Pr Case where
   pr (Case c b n t) =
@@ -164,16 +178,20 @@ instance Pr Case where
 
 instance Show Case where show = Doc.render . pr
 
+data Time = Exactly NominalDiffTime | Morethan NominalDiffTime
+  deriving (Eq, Ord, Show)
+
 -- | first argument: no. of contexts to generate,
--- second: max. iterations for each,
+-- second: iterations for each,
+-- third: timeout (in seconds)
 -- returns worst offender (with max total sum)
--- check_contexts :: Eval (Doc d) => Doc d -> Int -> IO Case
-check_contexts (p :: Proxy d) it = do
+check_contexts :: Eval (Doc d) => Proxy d -> Int -> Int -> IO Case
+check_contexts (p :: Proxy d) it to = do
   let go c [] = return c
       go c (ctx : ctxs) = do
-        out <- check_context p it ctx Leaf
+        out <- check_context p it to ctx Leaf
         let c' = Case ctx Leaf it out
         if (t c' > t c) then do print c'; go c' ctxs else go c ctxs
-  go (Case Hole Leaf 0 0) $ contents series
+  go (Case Hole Leaf 0 (Exactly 0)) $ contents series
 
 
