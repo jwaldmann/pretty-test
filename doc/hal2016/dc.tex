@@ -1,19 +1,24 @@
 \begin{frame}[fragile]
-\frametitle{Rewriting and Derivational Complexity}
+\frametitle{Derivational Complexity}
 
   \begin{itemize}[<+->]
+  \item 
+    for any model of computation 
+
+    (Program $P$, small-step semantics $\to_P$ on data (trees))
   \item
-    \emph{derivation height} of $t\in \Term(\Sigma)$, w.r.t. $R$
+    \emph{derivation height} of $t\in \Term(\Sigma)$, 
+w.r.t. Program $P$
 
     length of a longest derivation (computation) starting in $t$
 
-    $\deha_R(t)=\sup\{ k\mid \exists t': t\to_R^k t' \}$
+    $\deha_P(t)=\sup\{ k\mid \exists t': t\to_P^k t' \}$
   \item 
     \emph{derivational complexity} of $R$:
 
     derivation height as function of input size
 
-    $\dece_R= s \mapsto \sup \{\deha_R(t) \mid |t|\le s \}$.
+    $\dece_P= s \mapsto \sup \{\deha_P(t) \mid |t|\le s \}$.
   \item in general:
     
     complexity of a program $=$ (input size $\mapsto$ resource usage)

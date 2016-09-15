@@ -26,23 +26,3 @@ instance Eval TPH.Doc where ...
 
   \end{itemize}
 \end{frame}
-
-\begin{frame}[fragile]
-\frametitle{How to Apply the Formal Model (2)}
-
-  \begin{itemize}[<+->]
-  \item there are a lot of small terms,
-  \item most are not interesting (will be rendered fast)
-  \item we actually want families of terms
-    (with linear size), 
-
-    from iterating a context $t_k=C^k[t]$
-\begin{verbatim}
-data Context = Hole
-       | CBranch Op [Term] Context [Term]
-apply :: Context -> Term -> Term
-\end{verbatim}
-
-  \end{itemize}
-
-\end{frame}

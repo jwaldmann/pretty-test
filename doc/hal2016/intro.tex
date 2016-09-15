@@ -1,8 +1,24 @@
 \begin{frame}[fragile]
-\frametitle{}
+\frametitle{What and Why}
+4 seconds for printing a document with 1.601 chars:
+\begin{small}
+\begin{verbatim}
+import Text.PrettyPrint.HughesPJ
+:set +s
+length $ render
+ $ iterate 
+  (\d -> sep [text "l",cat [d],text "l"]) (text "l") 
+ !! 400
+\end{verbatim}
+\end{small}
 
-  \begin{itemize}[<+->]
-  \item
+  \begin{itemize} % [<+->]
+  \item this should not happen!
+  \item how do we detect that it does?
+  \item by enumerating test cases (this talk)
+  \item method is applicable to any library
+    that provides implementation of an abstract data type
   \end{itemize}
 
 \end{frame}
+
