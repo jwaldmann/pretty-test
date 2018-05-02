@@ -22,6 +22,8 @@ import qualified Text.PrettyPrint.Leijen.Text as TPLT
 import qualified Text.PrettyPrint.Free as TPF
 import qualified Text.PrettyPrint.ANSI.Leijen as TPAL
 import qualified Text.PrettyPrint.Mainland as TPM
+import qualified Data.Text.Prettyprint.Doc as DTP
+import qualified Data.Text.Prettyprint.Doc.Render.Text as DTP
 
 import Series
 import GHC.Generics
@@ -34,7 +36,7 @@ import qualified Data.Text.Lazy as DTL
 
 data Proxy (t :: Tag) = Proxy
 
-data Tag = TPH | TPL | TPLT | TPF | TPAL | TPM
+data Tag = TPH | TPL | TPLT | TPF | TPAL | TPM | DTP
   deriving (Eq, Ord, Show)
 
 class Printer ( p :: Tag ) where type Doc p
@@ -45,6 +47,7 @@ instance Printer TPLT where type Doc TPLT = TPLT.Doc
 instance Printer TPF where type Doc TPF = TPF.Doc ()
 instance Printer TPAL where type Doc TPAL = TPAL.Doc
 instance Printer TPM where type Doc TPM = TPM.Doc
+instance Printer DTP where type Doc DTP = DTP.Doc ()
 
 -- I'm pretty sure this could be generified, TH-ified etc.
 
@@ -111,6 +114,14 @@ instance Eval TPM.Doc where
     Branch op ts ->
       let fun = case op of Hcat -> TPM.stack ; Hsep -> TPM.spread ; Vcat -> TPM.stack ; Sep -> TPM.sep ; Cat -> TPM.cat ; Fsep -> TPM.spread ; Fcat -> TPM.stack
       in  TPM.align $ fun $ map eval ts
+
+instance Eval (DTP.Doc ()) where
+  size d = fromIntegral $ DTL.length $ DTP.renderLazy $ DTP.layoutPretty DTP.defaultLayoutOptions d
+  eval t = case t of
+    Leaf -> DTP.pretty "l"
+    Branch op ts ->
+      let fun = case op of Hcat -> DTP.hcat ; Hsep -> DTP.hsep ; Vcat -> DTP.vcat ; Sep -> DTP.sep ; Cat -> DTP.cat ; Fsep -> DTP.fillSep ; Fcat -> DTP.fillCat
+      in  DTP.align $ fun $ map eval ts
 
 class Pr a where pr :: a -> Doc.Doc
 
