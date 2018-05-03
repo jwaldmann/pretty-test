@@ -21,15 +21,18 @@ main = do
       _ -> run argv
 
 printers = 
-  [ "pretty", "wl-pprint", "wl-pprint-text", "wl-pprint-extras"
-  , "ansi-wl-pprint", "mainland-pretty", "prettyprinter"
+  [ "prettyprinter-pretty", "prettyprinter-smart", "prettyprinter-compact"
+  , "pretty"
+  , "wl-pprint", "wl-pprint-text", "wl-pprint-extras"
+  , "ansi-wl-pprint"
+  , "mainland-pretty"
   ]
 
 run (argv @ (p : rest)) = do
   let bar = replicate 80 '*'
   putStr $ unlines [ "", bar, unwords $ argv , bar ]
   let (it,to) = case rest of
-         []    -> (100, 10)
+         []    -> (500, 10)
          [s]   -> (read s, 10)
          [s,t] -> (read s, read t)
   case p of
@@ -39,4 +42,6 @@ run (argv @ (p : rest)) = do
       "wl-pprint-extras" -> void $ check_contexts (Proxy :: Proxy 'TPF ) it to
       "ansi-wl-pprint"   -> void $ check_contexts (Proxy :: Proxy 'TPAL) it to
       "mainland-pretty"  -> void $ check_contexts (Proxy :: Proxy 'TPM ) it to
-      "prettyprinter"    -> void $ check_contexts (Proxy :: Proxy 'DTP ) it to
+      "prettyprinter-pretty"   -> void $ check_contexts (Proxy :: Proxy ('DTP Pretty) ) it to
+      "prettyprinter-smart"    -> void $ check_contexts (Proxy :: Proxy ('DTP Smart ) ) it to
+      "prettyprinter-compact"  -> void $ check_contexts (Proxy :: Proxy ('DTP Compact) ) it to

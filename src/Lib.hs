@@ -36,18 +36,43 @@ import qualified Data.Text.Lazy as DTL
 
 data Proxy (t :: Tag) = Proxy
 
-data Tag = TPH | TPL | TPLT | TPF | TPAL | TPM | DTP
+data Style = Pretty | Smart | Compact
   deriving (Eq, Ord, Show)
 
-class Printer ( p :: Tag ) where type Doc p
+data Tag = TPH | TPL | TPLT | TPF | TPAL | TPM | DTP Style
+  deriving (Eq, Ord, Show)
 
-instance Printer TPH where type Doc TPH = TPH.Doc
-instance Printer TPL where type Doc TPL = TPL.Doc
-instance Printer TPLT where type Doc TPLT = TPLT.Doc
-instance Printer TPF where type Doc TPF = TPF.Doc ()
-instance Printer TPAL where type Doc TPAL = TPAL.Doc
-instance Printer TPM where type Doc TPM = TPM.Doc
-instance Printer DTP where type Doc DTP = DTP.Doc ()
+class Printer ( p :: Tag ) where 
+  type Doc p
+  size :: Proxy p -> Doc p -> Int
+
+instance Printer TPH where 
+  type Doc TPH = TPH.Doc  
+  size _ = length . TPH.render
+instance Printer TPL where 
+  type Doc TPL = TPL.Doc   
+  size _ d = length $ TPL.displayS ( TPL.renderPretty 0.4 80 d ) ""
+instance Printer TPLT where 
+  type Doc TPLT = TPLT.Doc
+  size _ d = fromIntegral $ DTL.length $ TPLT.displayT ( TPLT.renderPretty 0.4 80 d )
+instance Printer TPF where 
+  type Doc TPF = TPF.Doc ()
+  size _ d = length $ TPF.displayS ( TPF.renderPretty 0.4 80 d ) ""
+instance Printer TPAL where 
+  type Doc TPAL = TPAL.Doc
+  size _ d = length $ TPAL.displayS ( TPAL.renderPretty 0.4 80 d ) ""
+instance Printer TPM where 
+  type Doc TPM = TPM.Doc
+  size _ d = length $ TPM.displayS ( TPM.render 80 d ) ""
+instance Printer (DTP Pretty) where 
+  type Doc (DTP Pretty) = DTP.Doc ()
+  size _ d = fromIntegral $ DTL.length $ DTP.renderLazy $ DTP.layoutPretty DTP.defaultLayoutOptions d
+instance Printer (DTP Smart) where 
+  type Doc (DTP Smart) = DTP.Doc ()
+  size _ d = fromIntegral $ DTL.length $ DTP.renderLazy $ DTP.layoutSmart DTP.defaultLayoutOptions d
+instance Printer (DTP Compact) where 
+  type Doc (DTP Compact) = DTP.Doc ()
+  size _ d = fromIntegral $ DTL.length $ DTP.renderLazy $ DTP.layoutCompact d
 
 -- I'm pretty sure this could be generified, TH-ified etc.
 
@@ -65,10 +90,8 @@ data Term = Leaf
 
 class Eval d where
   eval :: Term -> d
-  size :: d -> Int
 
 instance Eval TPH.Doc where
-  size = length . TPH.render
   eval t = case t of
     Leaf -> TPH.text "l"
     Branch op ts ->
@@ -76,7 +99,6 @@ instance Eval TPH.Doc where
       in  fun $ map eval ts
 
 instance Eval TPL.Doc where
-  size d = length $ TPL.displayS ( TPL.renderPretty 0.4 80 d ) ""
   eval t = case t of
     Leaf -> TPL.text "l"
     Branch op ts ->
@@ -84,7 +106,6 @@ instance Eval TPL.Doc where
       in  TPL.align $ fun $ map eval ts
 
 instance Eval TPLT.Doc where
-  size d = fromIntegral $ DTL.length $ TPLT.displayT ( TPLT.renderPretty 0.4 80 d )
   eval t = case t of
     Leaf -> TPLT.text $ DTL.pack "l"
     Branch op ts ->
@@ -92,7 +113,6 @@ instance Eval TPLT.Doc where
       in  TPLT.align $ fun $ map eval ts
 
 instance Eval (TPF.Doc ()) where
-  size d = length $ TPF.displayS ( TPF.renderPretty 0.4 80 d ) ""
   eval t = case t of
     Leaf -> TPF.text "l"
     Branch op ts ->
@@ -100,7 +120,6 @@ instance Eval (TPF.Doc ()) where
       in  TPF.align $ fun $ map eval ts
 
 instance Eval TPAL.Doc where
-  size d = length $ TPAL.displayS ( TPAL.renderPretty 0.4 80 d ) ""
   eval t = case t of
     Leaf -> TPAL.text "l"
     Branch op ts ->
@@ -108,7 +127,6 @@ instance Eval TPAL.Doc where
       in  TPAL.align $ fun $ map eval ts
 
 instance Eval TPM.Doc where
-  size d = length $ TPM.displayS ( TPM.render 80 d ) ""
   eval t = case t of
     Leaf -> TPM.text "l"
     Branch op ts ->
@@ -116,7 +134,6 @@ instance Eval TPM.Doc where
       in  TPM.align $ fun $ map eval ts
 
 instance Eval (DTP.Doc ()) where
-  size d = fromIntegral $ DTL.length $ DTP.renderLazy $ DTP.layoutPretty DTP.defaultLayoutOptions d
   eval t = case t of
     Leaf -> DTP.pretty "l"
     Branch op ts ->
@@ -164,10 +181,10 @@ time_whnf to x = do
       Nothing -> Morethan $ diffUTCTime end start
 
 -- | first argument: number of iterations of this context
-check_context :: Eval (Doc d) => Proxy d -> Int -> Int -> Context -> Term -> IO Time
-check_context (_ :: Proxy d) n to ctx b = do
+check_context :: (Printer d, Eval (Doc d)) => Proxy d -> Int -> Int -> Context -> Term -> IO Time
+check_context (p :: Proxy d) n to ctx b = do
   let d = iterate (apply ctx) b !! n
-  time_whnf to ( size ( (eval d) :: Doc d  ) )
+  time_whnf to ( size p ( (eval d) :: Doc d  ) )
 
 -- | just count how many textdetails were emitted
 norender :: Doc.Doc -> Int
@@ -196,7 +213,7 @@ data Time = Exactly NominalDiffTime | Morethan NominalDiffTime
 -- second: iterations for each,
 -- third: timeout (in seconds)
 -- returns worst offender (with max total sum)
-check_contexts :: Eval (Doc d) => Proxy d -> Int -> Int -> IO Case
+check_contexts :: (Printer d, Eval (Doc d)) => Proxy d -> Int -> Int -> IO Case
 check_contexts (p :: Proxy d) it to = do
   let go c [] = return c
       go c (ctx : ctxs) = do
